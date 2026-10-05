@@ -1,3 +1,13 @@
 __pycache__/
 *.pyc
 /result
+
+# Local chat indexes and transcripts must never be published.
+*.db
+*.db-*
+*.sqlite
+*.sqlite-*
+*.sqlite3
+*.sqlite3-*
+*.jsonl
+.cache/
