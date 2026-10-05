@@ -21,7 +21,7 @@
       in
       {
         packages.default = pkgs.stdenvNoCC.mkDerivation {
-          pname = "chat-index";
+          pname = "wutchatwusdat";
           version = "0.1.0";
           src = ./.;
           nativeBuildInputs = [ pkgs.makeWrapper ];
@@ -32,13 +32,13 @@
           installPhase = ''
             mkdir -p $out/lib $out/bin
             cp chat_index.py $out/lib/chat_index.py
-            makeWrapper ${pkgs.python3}/bin/python3 $out/bin/chat-index \
+            makeWrapper ${pkgs.python3}/bin/python3 $out/bin/wutchatwusdat \
               --add-flags "$out/lib/chat_index.py"
           '';
         };
         apps.default = {
           type = "app";
-          program = "${self.packages.${system}.default}/bin/chat-index";
+          program = "${self.packages.${system}.default}/bin/wutchatwusdat";
         };
         devShells.default = pkgs.devshell.mkShell {
           imports = [ (pkgs.devshell.importTOML ./devshell.toml) ];

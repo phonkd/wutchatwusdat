@@ -1,4 +1,4 @@
-# chat-index
+# wutchatwusdat
 
 Search Claude Code, Codex and OpenCode conversations from one terminal. Press Enter to resume a result in the original client and project directory.
 
@@ -11,16 +11,16 @@ nix run . -- --provider codex
 To install from another flake, add this input and use its package in your Home Manager configuration:
 
 ```nix
-inputs.chat-index = {
-  url = "github:phonkd/chat-index";
+inputs.wutchatwusdat = {
+  url = "github:phonkd/wutchatwusdat";
   inputs.nixpkgs.follows = "nixpkgs";
 };
 
 # In a Home Manager module with inputs and pkgs in scope:
-home.packages = [ inputs.chat-index.packages.${pkgs.system}.default ];
+home.packages = [ inputs.wutchatwusdat.packages.${pkgs.system}.default ];
 ```
 
-The installed command is `chat-index` on Linux and macOS.
+The installed command is `wutchatwusdat` on Linux and macOS.
 
 The clients must already be on your `PATH`. The flake supplies Python and SQLite; no Python packages or services are needed.
 
@@ -41,7 +41,7 @@ nix run . -- --no-refresh
 nix run . -- --help
 ```
 
-Search displays up to 1,000 results, with more terminal space devoted to the result list. JSON output includes the transcript and metadata. Indexing runs automatically on launch and skips unchanged conversations. Source files are only read. The cache contains searchable chat text and is stored with owner-only permissions at `$XDG_CACHE_HOME/chat-index/index.sqlite3` (default `~/.cache/chat-index/index.sqlite3`). Delete it to rebuild from scratch, or use `--db PATH` for a separate index.
+Search displays up to 1,000 results, with more terminal space devoted to the result list. JSON output includes the transcript and metadata. Indexing runs automatically on launch and skips unchanged conversations. Source files are only read. The cache contains searchable chat text and is stored with owner-only permissions at `$XDG_CACHE_HOME/wutchatwusdat/index.sqlite3` (default `~/.cache/wutchatwusdat/index.sqlite3`). Delete it to rebuild from scratch, or use `--db PATH` for a separate index.
 
 Sources:
 

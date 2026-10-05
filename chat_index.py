@@ -282,8 +282,8 @@ def interface(screen, db, args):
                     draw(line, x+w-1, '│', style('muted'))
                 draw(y+h-1, x, '╰' + '─'*(w-2) + '╯', style('muted'))
 
-            draw(0, 1, 'CHAT INDEX', style('accent') | curses.A_BOLD)
-            x = 14
+            draw(0, 1, 'WUTCHATWUSDAT', style('accent') | curses.A_BOLD)
+            x = 16
             for client in [None, 'claude', 'codex', 'opencode']:
                 label = ' ' + (client or 'all') + ' '
                 draw(0, x, label, style('selected') if provider == client else style(client or 'muted'))
@@ -390,14 +390,14 @@ def interface(screen, db, args):
 
 
 def main():
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(prog="wutchatwusdat", description=__doc__)
     parser.add_argument('query', nargs='?', default='')
     parser.add_argument('--provider', choices=['claude','codex','opencode'])
     parser.add_argument('--json', action='store_true', help='Print search results instead of opening the terminal UI')
     parser.add_argument('--index-only', action='store_true')
     parser.add_argument('--no-refresh', action='store_true')
     parser.add_argument('--raw', action='store_true', help='Use SQLite FTS5 query syntax (OR, NOT, NEAR, etc.)')
-    parser.add_argument('--db', type=Path, default=Path(os.environ.get('XDG_CACHE_HOME', str(Path.home()/'.cache')))/'chat-index/index.sqlite3')
+    parser.add_argument('--db', type=Path, default=Path(os.environ.get('XDG_CACHE_HOME', str(Path.home()/'.cache')))/'wutchatwusdat/index.sqlite3')
     parser.add_argument('--claude-home', type=Path, default=Path(os.environ.get('CLAUDE_CONFIG_DIR', str(Path.home()/'.claude'))))
     parser.add_argument('--codex-home', type=Path, default=Path(os.environ.get('CODEX_HOME', str(Path.home()/'.codex'))))
     parser.add_argument('--opencode-home', type=Path, default=Path(os.environ.get('XDG_DATA_HOME', str(Path.home()/'.local/share')))/'opencode')
@@ -423,7 +423,7 @@ def main():
             if row:
                 resume(row)
     except (OSError, sqlite3.Error, RuntimeError, curses.error) as exc:
-        print(f'chat-index: {exc}', file=sys.stderr)
+        print(f'wutchatwusdat: {exc}', file=sys.stderr)
         return 1
     except KeyboardInterrupt:
         return 130
