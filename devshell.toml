@@ -1,0 +1,12 @@
+[devshell]
+name = "index"
+
+# One nixpkgs attribute per entry, e.g. ["postgresql", "jq"].
+packages = ["python3"]
+
+# Named commands show up in the `menu` printed on entry:
+# [[commands]]
+# name = "psql"
+# help = "PostgreSQL interactive terminal"
+# category = "database"
+# package = "postgresql"
