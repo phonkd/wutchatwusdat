@@ -187,6 +187,13 @@ def search(db, query='', provider=None, limit=1000, raw=False):
                       ' ORDER BY ' + order + ' LIMIT ?', params + [limit]).fetchall()
 
 
+def recent_chats(db, limit=1000):
+    return db.execute(
+        "SELECT *,substr(body,1,350) AS excerpt FROM chats "
+        "ORDER BY modified DESC,key LIMIT ?", (limit,)
+    ).fetchall()
+
+
 def resume_command(row):
     return {'claude': ['claude', '--resume', row['sid']],
             'codex': ['codex', 'resume', row['sid']],
@@ -241,6 +248,8 @@ def interface(screen, db, args):
     def lookup(query, provider):
         with sqlite3.connect(Path(db_path).as_uri() + '?mode=ro', uri=True) as connection:
             connection.row_factory = sqlite3.Row
+            if provider == 'recent':
+                return recent_chats(connection)
             return search(connection, query, provider, raw=args.raw)
 
     query, selected, scroll, provider = args.query, 0, 0, args.provider
@@ -284,15 +293,18 @@ def interface(screen, db, args):
 
             draw(0, 1, 'WUTCHATWUSDAT', style('accent') | curses.A_BOLD)
             x = 16
-            for client in [None, 'claude', 'codex', 'opencode']:
+            for client in [None, 'recent', 'claude', 'codex', 'opencode']:
                 label = ' ' + (client or 'all') + ' '
                 draw(0, x, label, style('selected') if provider == client else style(client or 'muted'))
                 x += len(label)+1
-            box(2, 0, 3, width-1, 'Search')
-            visible_query = query[-max(1,width-8):]
+            recent = provider == 'recent'
+            box(2, 0, 3, width-1, 'Recent · all tools · newest first' if recent else 'Search')
+            visible_query = '' if recent else query[-max(1,width-8):]
             draw(3, 2, '❯ ', style('accent') | curses.A_BOLD)
-            draw(3, 4, visible_query)
-            status = 'Searching…' if busy else (f'{len(rows)} matches' + (' · limit 1000' if len(rows) == 1000 else ''))
+            draw(3, 4, 'Type to switch to search' if recent else visible_query, style('muted') if recent else 0)
+            status = ('Loading…' if recent else 'Searching…') if busy else (
+                f'{len(rows)} ' + ('recent chats' if recent else 'matches') +
+                (' · limit 1000' if len(rows) == 1000 else ''))
             draw(5, 1, status, style('accent'))
             if height >= 15 and width >= 45:
                 # Wide terminals get a full-height list beside the preview.
@@ -315,9 +327,14 @@ def interface(screen, db, args):
                     draw(y, 1, ' '*(list_width-2), attr)
                     draw(y, 2, '▸' if active else ' ', attr)
                     draw(y, 4, row['provider'][:8].ljust(8), attr if active else style(row['provider']))
-                    draw(y, 13, row['title'], attr | (curses.A_BOLD if active else 0), list_width-15)
+                    title = row['title']
+                    if recent:
+                        title = datetime.fromtimestamp(row['modified']).strftime('%m-%d %H:%M  ') + title
+                    draw(y, 13, title, attr | (curses.A_BOLD if active else 0), list_width-15)
                 if not rows:
-                    message = error or ('Searching…' if busy else ('No matching chats.' if query.strip() else 'Type to search your chats.'))
+                    message = error or ('Loading…' if busy else (
+                        'No indexed chats.' if recent else (
+                            'No matching chats.' if query.strip() else 'Type to search your chats.')))
                     draw(7, 2, message, style('error' if error else 'muted'), list_width-4)
                 box(py, px, ph, pw, 'Preview · PgUp/PgDn')
                 if rows and ph >= 4:
@@ -337,7 +354,7 @@ def interface(screen, db, args):
             else:
                 draw(7, 1, 'Enlarge terminal to view results.', style('muted'))
             x, button_y = 1, height-2
-            for key_label, label in [('Enter','open'), ('↑↓','select'), ('Tab','client'), ('Ctrl-U','clear'), ('Ctrl-R','refresh'), ('Esc','quit')]:
+            for key_label, label in [('Enter','open'), ('↑↓','select'), ('Tab','view'), ('Ctrl-U','clear'), ('Ctrl-R','refresh'), ('Esc','quit')]:
                 if x+len(key_label)+len(label)+4 >= width:
                     x, button_y = 1, button_y+1
                 if button_y >= height:
@@ -366,9 +383,11 @@ def interface(screen, db, args):
                 scroll += max(1,height//2)
             elif key == curses.KEY_PPAGE:
                 scroll = max(0,scroll-height//2)
-            elif key == '\t':
-                providers = [None,'claude','codex','opencode']
-                provider = providers[(providers.index(provider)+1)%4]
+            elif key in ('\t', curses.KEY_BTAB):
+                providers = [None,'recent','claude','codex','opencode']
+                step = -1 if key == curses.KEY_BTAB else 1
+                provider = providers[(providers.index(provider)+step)%len(providers)]
+                rows, selected, scroll = [], 0, 0
                 changed = True
             elif key == '\x12':
                 refresh(db, args)
@@ -378,12 +397,16 @@ def interface(screen, db, args):
             elif key == '\x15':
                 query, changed = '', True
             elif isinstance(key,str) and key.isprintable():
+                if provider == 'recent':
+                    provider, query = None, ''
+                    rows, selected, scroll = [], 0, 0
                 query, changed = query+key, True
             if changed:
                 revision += 1
-                pending, due = bool(query.strip()), time.monotonic()+0.2
+                pending = provider == 'recent' or bool(query.strip())
+                due = time.monotonic() + (0 if provider == 'recent' else 0.2)
                 error = ''
-                if not query.strip():
+                if not pending:
                     rows, selected, scroll = [], 0, 0
     finally:
         executor.shutdown(wait=False, cancel_futures=True)

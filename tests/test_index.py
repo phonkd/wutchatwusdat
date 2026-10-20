@@ -74,6 +74,20 @@ class IndexTests(unittest.TestCase):
                 cd.assert_called_once_with('/tmp')
                 execute.assert_called_once_with(provider, expected)
 
+    def test_recent_across_tools_and_empty_search(self):
+        for provider, modified in [('claude', 20), ('codex', 30), ('opencode', 10)]:
+            app.put(self.db, provider, 'same-id', provider, '/tmp', modified,
+                    'conversation', provider, '1')
+        self.assertEqual([r['provider'] for r in app.recent_chats(self.db)],
+                         ['codex', 'claude', 'opencode'])
+        self.assertEqual(len(app.recent_chats(self.db, limit=2)), 2)
+        self.assertEqual(app.search(self.db), [])
+        self.assertEqual(app.search(self.db, '   '), [])
+        app.put(self.db, 'opencode', 'same-id', 'updated', '/tmp', 40,
+                'new message', 'opencode', '2')
+        self.assertEqual(app.recent_chats(self.db)[0]['provider'], 'opencode')
+        self.assertEqual(len(app.recent_chats(self.db)), 3)
+
     def test_literal_punctuation_and_raw_boolean(self):
         app.put(self.db,'claude','a','Café deploy','/tmp',1,'running migrations with sqlite','source','1')
         self.assertTrue(app.search(self.db, 'cafe'))
